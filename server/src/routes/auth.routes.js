@@ -1,6 +1,6 @@
 import express from 'express';
 import { supabase } from '../config/supabase.js';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { SessionModel } from '../../models/index.js';
 

@@ -44,8 +44,12 @@ if (!fs.existsSync(tempDir)) {
 const app = express();
 
 // Middleware
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',') 
+  : ["http://localhost:3000", "http://localhost:5173"];
+
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173"],
+  origin: allowedOrigins,
   credentials: true
 }));
 app.use(express.json());
@@ -84,7 +88,7 @@ app.use((err, req, res, next) => {
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: allowedOrigins,
     methods: ["GET", "POST"]
   }
 });
@@ -92,8 +96,9 @@ const io = new Server(httpServer, {
 // Store io instance on app
 app.io = io;
 
+// Make PORT configuration more explicit
 const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
