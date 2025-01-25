@@ -20,7 +20,7 @@ const AddPaymentModal = ({ visible, onClose, invoiceId, remainingAmount, onSucce
         notes: values.notes || ''
       };
 
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoiceId}/payments`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/${invoiceId}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

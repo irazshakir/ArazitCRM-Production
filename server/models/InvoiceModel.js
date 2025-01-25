@@ -145,15 +145,27 @@ const InvoiceModel = {
 
   update: async (id, invoiceData) => {
     try {
-      const { data, error } = await supabase
+      // Calculate total amount from items if provided
+      let totalAmount = invoiceData.total_amount;
+      
+      const updatePayload = {
+        created_date: invoiceData.created_date,
+        due_date: invoiceData.due_date,
+        bill_to: invoiceData.bill_to,
+        notes: invoiceData.notes,
+        total_amount: totalAmount,
+        updated_at: new Date()
+      };
+
+      const { data: invoice, error } = await supabase
         .from('invoices')
-        .update(invoiceData)
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return invoice;
     } catch (error) {
       throw error;
     }
@@ -254,6 +266,38 @@ const InvoiceModel = {
 
       if (error) throw error;
       return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteInvoiceItems: async (invoiceId) => {
+    try {
+      const { error } = await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoiceId);
+
+      if (error) throw error;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  addInvoiceItems: async (invoiceId, items) => {
+    try {
+      const itemsToInsert = items.map(item => ({
+        invoice_id: invoiceId,
+        service_name: item.service_name,
+        description: item.description,
+        amount: item.amount
+      }));
+
+      const { error } = await supabase
+        .from('invoice_items')
+        .insert(itemsToInsert);
+
+      if (error) throw error;
     } catch (error) {
       throw error;
     }

@@ -25,17 +25,30 @@ export const verifyWebhook = async (req, res) => {
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
 
-    if (mode && token) {
-      if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-        res.status(200).send(challenge);
-      } else {
-        res.sendStatus(403);
-      }
+    console.log('Webhook verification attempt:', {
+      mode,
+      token,
+      challenge,
+      expectedToken: process.env.WHATSAPP_VERIFY_TOKEN,
+      matches: token === process.env.WHATSAPP_VERIFY_TOKEN
+    });
+
+    if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+      console.log('Sending challenge response:', challenge);
+      
+      // Set only essential headers and send challenge
+      res.set('Content-Type', 'text/plain');
+      return res.send(String(challenge));
     }
+
+    console.log('Verification failed - sending 403');
+    return res.sendStatus(403);
   } catch (error) {
-    res.sendStatus(500);
+    console.error('Webhook error:', error);
+    return res.sendStatus(500);
   }
 };
+
 
 // Handle incoming messages
 export const receiveMessage = async (req, res) => {
@@ -65,7 +78,7 @@ export const receiveMessage = async (req, res) => {
           .single();
 
         if (leadQueryError) {
-          message.error('❌ Error querying lead:', leadQueryError);
+          logger.error('❌ Error querying lead:', leadQueryError);
         }
 
         // Store the message with appropriate lead information
@@ -78,23 +91,29 @@ export const receiveMessage = async (req, res) => {
           const currentDate = new Date();
           
           const { data: newLead, error: createError } = await supabase
-            .from('leads')
-            .insert([{
-              name: `WhatsApp Lead (${phone})`,
-              phone: phone,
-              assigned_user: null, // Explicitly set as null for unassigned
-              lead_source_id: 7,
-              lead_stage: 1,
-              lead_active_status: true,
-              fu_date: currentDate,
-              fu_hour: null,
-              fu_minutes: null,
-              fu_period: null,
-              created_at: currentDate,
-              updated_at: currentDate
-            }])
-            .select()
-            .single();
+          .from('leads')
+          .insert([{
+            name: `WhatsApp Lead (${phone})`,
+            phone: phone,
+            email: `${phone}@gmail.com`,        // Unique email using phone
+            assigned_user: 1,                    // Default assigned user
+            lead_source_id: 7,                   // WhatsApp source
+            lead_stage: 1,                       // Initial stage
+            lead_product: 1,                     // Default product
+            branch_id: 1,                        // Default branch
+            lead_active_status: true,
+            fu_date: currentDate,
+            fu_hour: 10,                         // Default follow-up hour
+            fu_minutes: 0,                       // Default follow-up minutes
+            fu_period: 'AM',                     // Default period
+            initial_remarks: 'Lead created through WhatsApp messages',
+            closed_at: null,                     // Keep null as not shown in ChatList
+            won_at: null,                        // Keep null as not shown in ChatList
+            created_at: currentDate,
+            updated_at: currentDate
+          }])
+          .select()
+          .single();
 
           if (createError) {
             throw createError;
@@ -308,7 +327,7 @@ export const replyMessage = async (req, res) => {
       .single();
 
     if (messageError) {
-      message.error('❌ Error storing outgoing message:', messageError);
+      logger.error('❌ Error storing outgoing message:', messageError);
     }
 
     res.status(200).json({ 

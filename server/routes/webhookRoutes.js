@@ -15,7 +15,7 @@ import logger from '../utils/logger.js';
 
 const router = express.Router();
 
-// Webhook verification and message handling
+
 router.get('/webhook/messages', verifyWebhook);
 router.post('/webhook/messages', receiveMessage);
 

@@ -112,4 +112,46 @@ router.get('/invoices/:id/payments', async (req, res) => {
   }
 });
 
+// Update invoice
+router.put('/invoices/:id', async (req, res) => {
+  try {
+    const invoiceId = req.params.id;
+    const updateData = req.body;
+    
+    // Validate required fields
+    if (!updateData.created_date || !updateData.due_date || !updateData.billTo) {
+      return res.status(400).json({
+        message: 'Required fields are missing'
+      });
+    }
+
+    const updatedInvoice = await InvoiceModel.update(invoiceId, {
+      created_date: updateData.created_date,
+      due_date: updateData.due_date,
+      bill_to: updateData.billTo,
+      notes: updateData.notes,
+      total_amount: updateData.total_amount
+    });
+
+    // Update invoice items if provided
+    if (updateData.items && updateData.items.length > 0) {
+      // First delete existing items
+      await InvoiceModel.deleteInvoiceItems(invoiceId);
+      
+      // Then insert new items
+      await InvoiceModel.addInvoiceItems(invoiceId, updateData.items);
+    }
+
+    res.json({
+      message: 'Invoice updated successfully',
+      data: updatedInvoice
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error updating invoice', 
+      error: error.message 
+    });
+  }
+});
+
 export default router; 

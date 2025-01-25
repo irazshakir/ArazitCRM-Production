@@ -55,7 +55,7 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
     try {
       if (!invoice || !invoice.id) return;
       
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoice.id}/items`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/invoices/${invoice.id}/items`);
       if (!response.ok) {
         throw new Error('Failed to fetch invoice items');
       }
@@ -83,7 +83,7 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
     try {
       if (!invoice || !invoice.id) return;
       
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoice.id}/payments`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/invoices/${invoice.id}/payments`);
       if (!response.ok) throw new Error('Failed to fetch payment history');
       
       const data = await response.json();
@@ -98,27 +98,35 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
       const values = await form.validateFields();
       setLoading(true);
       
-      const response = await fetch(`http://localhost:5000/api/invoices/${invoice.id}`, {
+      const updateData = {
+        created_date: values.date.format('YYYY-MM-DD'),
+        due_date: values.dueDate.format('YYYY-MM-DD'),
+        billTo: values.billTo,
+        notes: values.notes,
+        total_amount: totalAmount,
+        items: items.map(item => ({
+          service_name: item.serviceName,
+          description: item.description,
+          amount: Number(item.amount)
+        }))
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/invoices/${invoice.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...values,
-          created_date: values.date.format('YYYY-MM-DD'),
-          due_date: values.dueDate.format('YYYY-MM-DD'),
-          items: items.map(item => ({
-            service_name: item.serviceName,
-            description: item.description,
-            amount: Number(item.amount)
-          }))
-        }),
+        body: JSON.stringify(updateData),
       });
 
-      if (!response.ok) throw new Error('Failed to update invoice');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update invoice');
+      }
       
       message.success('Invoice updated successfully');
       onUpdate();
+      onClose();
     } catch (error) {
       message.error(error.message);
     } finally {
@@ -160,7 +168,7 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
       width: '30%',
       render: (_, record, index) => (
         <Input 
-          prefix="PKR"
+          prefix="AED"
           placeholder="0.00"
           value={record.amount}
           onChange={(e) => handleItemChange(index, 'amount', e.target.value)}
@@ -199,7 +207,7 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
       title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount) => `PKR ${Number(amount).toFixed(2)}`,
+      render: (amount) => `AED ${Number(amount).toFixed(2)}`,
     },
     {
       title: 'Payment Type',
@@ -216,7 +224,7 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
       title: 'Remaining',
       dataIndex: 'remaining_amount',
       key: 'remaining_amount',
-      render: (amount) => `PKR ${Number(amount).toFixed(2)}`,
+      render: (amount) => `AED ${Number(amount).toFixed(2)}`,
     }
   ];
 
@@ -334,15 +342,15 @@ const EditInvoice = ({ invoice, visible, onClose, onUpdate }) => {
               <div className="summary-section">
                 <div className="summary-row">
                   <span>Amount Received:</span>
-                  <span className="amount">PKR {invoice?.amount_received?.toFixed(2) || '0.00'}</span>
+                  <span className="amount">AED {invoice?.amount_received?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="summary-row">
                   <span>Remaining Amount:</span>
-                  <span className="amount">PKR {invoice?.remaining_amount?.toFixed(2) || '0.00'}</span>
+                  <span className="amount">AED {invoice?.remaining_amount?.toFixed(2) || '0.00'}</span>
                 </div>
                 <div className="summary-row total">
                   <span>Total:</span>
-                  <span className="amount">PKR {totalAmount.toFixed(2)}</span>
+                  <span className="amount">AED {totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>

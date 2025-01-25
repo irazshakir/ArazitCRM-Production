@@ -46,10 +46,26 @@ const app = express();
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ["http://localhost:3000", "http://localhost:5173"];
+  : [
+      "http://localhost:3000", 
+      "http://localhost:5173", 
+      "https://app.indegotourism.com",
+      "http://app.indegotourism.com"  // Add both http and https versions
+    ];
+
+
+
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true
 }));
 app.use(express.json());
@@ -57,6 +73,8 @@ app.use(fileUpload({
   useTempFiles: true,
   tempFileDir: tempDir
 }));
+
+
 
 // Routes
 app.use('/api', authRoutes);
@@ -89,7 +107,8 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -102,4 +121,4 @@ httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-export default app; 
+export { app, httpServer, io }; 

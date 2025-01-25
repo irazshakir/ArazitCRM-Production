@@ -53,7 +53,7 @@ const Invoices = () => {
         queryParams.append('status', statusFilter);
       }
 
-      const response = await fetch(`http://localhost:5000/api/invoices?${queryParams}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/invoices?${queryParams}`);
       if (!response.ok) throw new Error('Failed to fetch invoices');
       
       const data = await response.json();
@@ -122,13 +122,13 @@ const Invoices = () => {
       title: 'RECEIVED',
       dataIndex: 'amount_received',
       key: 'amount_received',
-      render: (amount) => `PKR ${Number(amount).toFixed(2)}`,
+      render: (amount) => `AED ${Number(amount).toFixed(2)}`,
     },
     {
       title: 'PENDING',
       dataIndex: 'remaining_amount',
       key: 'remaining_amount',
-      render: (amount) => `PKR ${Number(amount).toFixed(2)}`,
+      render: (amount) => `AED ${Number(amount).toFixed(2)}`,
     },
     {
       title: 'STATUS',
@@ -256,7 +256,7 @@ const Invoices = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Payments Received</p>
-                <h2 className="text-2xl font-semibold">PKR {statistics.received.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {statistics.received.toFixed(2)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-green-500" />
             </div>
@@ -265,7 +265,7 @@ const Invoices = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Pending Payments</p>
-                <h2 className="text-2xl font-semibold">PKR {statistics.pending.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {statistics.pending.toFixed(2)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-red-500" />
             </div>

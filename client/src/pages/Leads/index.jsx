@@ -33,7 +33,7 @@ import moment from 'moment';
 const { Title } = Typography;
 const { TextArea } = Input;
 
-axios.defaults.baseURL = 'http://localhost:5000'; // Your backend URL
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;  // Your backend URL
 
 // Move the debounced function outside the component to prevent recreation
 const debouncedFetchLeads = debounce(async (value, callback) => {

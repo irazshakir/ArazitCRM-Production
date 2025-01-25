@@ -199,31 +199,34 @@ export const LeadModel = {
   update: async (id, data) => {
     try {
       const now = new Date().toISOString();
+      
+      // Create a dynamic update object only with provided fields
       const updatedData = {
-        name: data.name,
-        phone: data.phone,
-        email: data.email,
-        lead_product: data.lead_product,
-        lead_stage: data.lead_stage,
-        lead_source_id: data.lead_source_id,
-        branch_id: data.branch_id,
-        fu_date: data.fu_date,
-        fu_hour: data.fu_hour,
-        fu_minutes: data.fu_minutes,
-        fu_period: data.fu_period,
-        lead_active_status: data.lead_active_status,
-        assigned_user: data.assigned_user,
         updated_at: now
       };
 
-      // Handle closed_at based on lead_active_status
+      // Only add fields that are present in the update request
+      if (data.name !== undefined) updatedData.name = data.name;
+      if (data.phone !== undefined) updatedData.phone = data.phone;
+      if (data.email !== undefined) updatedData.email = data.email;
+      if (data.lead_product !== undefined) updatedData.lead_product = data.lead_product;
+      if (data.lead_stage !== undefined) updatedData.lead_stage = data.lead_stage;
+      if (data.lead_source_id !== undefined) updatedData.lead_source_id = data.lead_source_id;
+      if (data.branch_id !== undefined) updatedData.branch_id = data.branch_id;
+      if (data.fu_date !== undefined) updatedData.fu_date = data.fu_date;
+      if (data.fu_hour !== undefined) updatedData.fu_hour = data.fu_hour;
+      if (data.fu_minutes !== undefined) updatedData.fu_minutes = data.fu_minutes;
+      if (data.fu_period !== undefined) updatedData.fu_period = data.fu_period;
+      if (data.lead_active_status !== undefined) updatedData.lead_active_status = data.lead_active_status;
+      if (data.assigned_user !== undefined) updatedData.assigned_user = data.assigned_user;
+
+      // Handle special cases
       if (data.lead_active_status === false) {
         updatedData.closed_at = now;
       } else if (data.lead_active_status === true) {
-        updatedData.closed_at = null;  // Reset closed_at when lead is reactivated
+        updatedData.closed_at = null;
       }
 
-      // Add won_at if lead stage is being set to 4 (Won)
       if (data.lead_stage === 4) {
         updatedData.won_at = now;
       }

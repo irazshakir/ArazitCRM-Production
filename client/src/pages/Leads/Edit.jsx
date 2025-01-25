@@ -7,7 +7,7 @@ import ChatInfo from '../../components/ChatInfo/ChatInfo';
 import axios from 'axios';
 
 // Add this line to set base URL
-axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.baseURL = import.meta.env.VITE_API_URL;
 
 const { Content, Sider } = Layout;
 const { Title } = Typography;

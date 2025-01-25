@@ -10,7 +10,8 @@ const AccountModel = ({ open, onCancel, onSubmit, initialValues, title = "Add Ne
 
   useEffect(() => {
     if (initialValues) {
-      // Convert payment_date to dayjs object for DatePicker
+      
+     
       const formattedValues = {
         ...initialValues,
         payment_date: initialValues.payment_date ? dayjs(initialValues.payment_date) : undefined
@@ -22,15 +23,26 @@ const AccountModel = ({ open, onCancel, onSubmit, initialValues, title = "Add Ne
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+       // Log the raw values
+       console.log('Raw form values:', values);
+
+       // Ensure amount is properly handled
+       if (!values.amount && values.amount !== 0) {
+         throw new Error('Amount is required');
+       }
+       
       // Transform the date back to ISO string
       const formattedValues = {
         ...values,
         payment_date: values.payment_date?.toISOString(),
+        amount: parseFloat(values.amount),
         // Automatically set credit/debit based on payment_type
         payment_credit_debit: ['Received', 'Refunds'].includes(values.payment_type) 
           ? 'credit' 
           : 'debit'
       };
+
+      console.log('Submitting values:', formattedValues); 
       
       await onSubmit(formattedValues);
       form.resetFields();
@@ -102,14 +114,31 @@ const AccountModel = ({ open, onCancel, onSubmit, initialValues, title = "Add Ne
           label="Amount"
           rules={[
             { required: true, message: 'Please enter amount' },
-            { type: 'number', min: 0, message: 'Amount must be greater than 0' }
+            {
+              validator: (_, value) => {
+                if (!value && value !== 0) {
+                  return Promise.reject('Amount is required');
+                }
+                if (isNaN(value) || value <= 0) {
+                  return Promise.reject('Please enter a valid amount greater than 0');
+                }
+                return Promise.resolve();
+              }
+            }
           ]}
         >
           <InputNumber
             className="w-full"
             placeholder="Enter amount"
-            formatter={value => `Rs. ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            parser={value => value.replace(/Rs\.\s?|(,*)/g, '')}
+            min={0}
+            step={0.01}
+            precision={2}
+            formatter={value => (value ? `AED ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+            parser={value => {
+              const parsed = value.replace(/AED\s?|(,*)/g, '');
+              const number = parseFloat(parsed);
+              return isNaN(number) ? '' : number;
+            }}
           />
         </Form.Item>
 

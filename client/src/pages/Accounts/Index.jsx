@@ -3,6 +3,7 @@ import { Card, DatePicker, Select, Space, Button, Modal, Form, Input, InputNumbe
 import { DollarOutlined, PlusOutlined } from '@ant-design/icons';
 import UniversalTable from '../../components/UniversalTable';
 import ActionDropdown from '../../components/ActionDropdown';
+import AccountModel from '../../components/AccountModel/AccountModel';
 
 const { RangePicker } = DatePicker;
 
@@ -55,7 +56,7 @@ const Accounts = () => {
       title: 'AMOUNT',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount) => `Rs.${amount.toFixed(2)}`,
+      render: (amount) => `AED ${amount.toFixed(0)}`,
     },
     {
       title: 'ACTIONS',
@@ -73,7 +74,7 @@ const Accounts = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/accounts?timeRange=${timeRange}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/accounts?timeRange=${timeRange}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch data');
@@ -136,22 +137,24 @@ const Accounts = () => {
       setLoading(true);
       
       const formattedValues = {
-        payment_type: values.type,
-        payment_mode: values.mode,
-        amount: Number(values.amount),
-        payment_date: new Date().toISOString(),
+        payment_type: values.payment_type, // Changed from values.type
+        payment_mode: values.payment_mode, // Changed from values.mode
+        amount: parseFloat(values.amount),
+        payment_date: values.payment_date,
         client_name: values.client_name || null,
         notes: values.notes || null,
-        payment_credit_debit: ['Received', 'Refunds'].includes(values.type) 
+        payment_credit_debit: ['Received', 'Refunds'].includes(values.payment_type) 
           ? 'credit' 
           : 'debit'
       };
 
       const url = editingRecord 
-        ? `/api/accounts/${editingRecord.id}`
-        : '/api/accounts';
+        ? `${import.meta.env.VITE_API_URL}/api/accounts/${editingRecord.id}`
+        : `${import.meta.env.VITE_API_URL}/api/accounts`;
 
       const method = editingRecord ? 'PUT' : 'POST';
+
+      console.log('Submitting values:', formattedValues); // Debug log
 
       const response = await fetch(url, {
         method,
@@ -162,15 +165,18 @@ const Accounts = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${editingRecord ? 'update' : 'create'} transaction`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${editingRecord ? 'update' : 'create'} transaction`);
       }
 
       await response.json();
       message.success(`Transaction ${editingRecord ? 'updated' : 'created'} successfully`);
       handleModalClose();
+      fetchData(); // Refresh the list
       
     } catch (error) {
       message.error(`Error ${editingRecord ? 'updating' : 'creating'} transaction: ` + error.message);
+      console.error('Full error:', error);
     } finally {
       setLoading(false);
     }
@@ -178,7 +184,7 @@ const Accounts = () => {
 
   const handleDelete = async (record) => {
     try {
-      const response = await fetch(`/api/accounts/${record.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/accounts/${record.id}`, {
         method: 'DELETE',
       });
 
@@ -237,7 +243,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Received</p>
-                <h2 className="text-2xl font-semibold">Rs.{stats.received.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {stats.received.toFixed(0)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-green-500" />
             </div>
@@ -246,7 +252,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Expenses</p>
-                <h2 className="text-2xl font-semibold">Rs.{stats.expenses.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {stats.expenses.toFixed(0)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-red-500" />
             </div>
@@ -255,7 +261,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Pending</p>
-                <h2 className="text-2xl font-semibold">Rs.{stats.pending.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {stats.pending.toFixed(0)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-yellow-500" />
             </div>
@@ -264,7 +270,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600">Total</p>
-                <h2 className="text-2xl font-semibold">Rs.{stats.total.toFixed(2)}</h2>
+                <h2 className="text-2xl font-semibold">AED {stats.total.toFixed(0)}</h2>
               </div>
               <DollarOutlined className="text-2xl text-blue-500" />
             </div>
@@ -282,94 +288,20 @@ const Accounts = () => {
       />
 
       {/* Add Transaction Modal */}
-      <Modal
-        title={modalTitle}
+      <AccountModel
         open={isModalOpen}
         onCancel={handleModalClose}
-        footer={null}
-        destroyOnClose
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <Form.Item
-            name="type"
-            label="Transaction Type"
-            rules={[{ required: true, message: 'Please select transaction type' }]}
-          >
-            <Select
-              placeholder="Select type"
-              options={[
-                { value: 'Received', label: 'Received' },
-                { value: 'Expenses', label: 'Expenses' },
-                { value: 'Payments', label: 'Payments' },
-                { value: 'Refunds', label: 'Refunds' }
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="mode"
-            label="Payment Mode"
-            rules={[{ required: true, message: 'Please select payment mode' }]}
-          >
-            <Select
-              placeholder="Select mode"
-              options={[
-                { value: 'Online', label: 'Online' },
-                { value: 'Cash', label: 'Cash' },
-                { value: 'Cheque', label: 'Cheque' }
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="amount"
-            label="Amount"
-            rules={[{ required: true, message: 'Please enter amount' }]}
-          >
-            <InputNumber
-              className="w-full"
-              min={0}
-              placeholder="Enter amount"
-              formatter={value => `Rs. ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={value => value.replace(/Rs\.\s?|(,*)/g, '')}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="client_name"
-            label="Client Name"
-          >
-            <Input placeholder="Enter client name" />
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="Notes"
-          >
-            <Input.TextArea rows={4} placeholder="Enter any additional notes" />
-          </Form.Item>
-
-          <Form.Item className="mb-0 flex justify-end gap-2">
-            <Button onClick={handleModalClose}>
-              Cancel
-            </Button>
-            <Button 
-              type="primary"
-              htmlType="submit"
-              style={{ 
-                backgroundColor: '#aa2478',
-                borderColor: '#aa2478'
-              }}
-            >
-              {modalTitle}
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleSubmit}
+        initialValues={editingRecord ? {
+          payment_type: editingRecord.payment_type,
+          payment_mode: editingRecord.payment_mode,
+          amount: editingRecord.amount,
+          payment_date: dayjs(editingRecord.payment_date),
+          client_name: editingRecord.client_name,
+          notes: editingRecord.notes
+        } : undefined}
+        title={editingRecord ? 'Edit Transaction' : 'Add New Transaction'}
+      />
     </div>
   );
 };

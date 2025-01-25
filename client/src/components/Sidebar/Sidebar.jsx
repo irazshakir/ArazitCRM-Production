@@ -231,6 +231,21 @@ const Sidebar = () => {
     }
   };
 
+   // Add this new function to determine which keys should be open
+   const getDefaultOpenKeys = () => {
+    const pathname = location.pathname;
+    const openKeys = [];
+    
+    if (pathname.includes('/analytics')) {
+      openKeys.push('analytics');
+    }
+    if (pathname.includes('/settings')) {
+      openKeys.push('settings');
+    }
+    
+    return openKeys;
+  };
+
   return (
     <Sider
       width={80}
@@ -265,7 +280,7 @@ const Sidebar = () => {
         <Menu
           mode="inline"
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={['analytics', 'settings']}
+          defaultOpenKeys={getDefaultOpenKeys()}
           style={{ border: 'none' }}
           items={getMenuItems()}
         />
