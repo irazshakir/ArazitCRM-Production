@@ -136,6 +136,41 @@ const AccountModel = {
     } catch (error) {
       throw error;
     }
+  },
+
+  exportData: async ({ timeRange }) => {
+    try {
+      const accounts = await AccountModel.findAll({ timeRange });
+      
+      // Convert data to CSV format
+      const headers = [
+        'Payment Date',
+        'Payment Type',
+        'Payment Mode',
+        'Amount',
+        'Client Name',
+        'Credit/Debit',
+        'Notes',
+        'Created At',
+        'Updated At'
+      ].join(',');
+
+      const rows = accounts.map(account => [
+        new Date(account.payment_date).toISOString(),
+        account.payment_type,
+        account.payment_mode,
+        account.amount,
+        account.client_name || '',
+        account.payment_credit_debit,
+        (account.notes || '').replace(/,/g, ';'), // Replace commas in notes with semicolons
+        new Date(account.created_at).toISOString(),
+        new Date(account.updated_at).toISOString()
+      ].join(','));
+
+      return [headers, ...rows].join('\n');
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

@@ -154,4 +154,31 @@ router.put('/invoices/:id', async (req, res) => {
   }
 });
 
+// Add this new route
+router.get('/invoices/export', async (req, res) => {
+  try {
+    const { search, timeRange, startDate, endDate, status } = req.query;
+    const csvData = await InvoiceModel.exportData({ 
+      search, 
+      timeRange, 
+      startDate, 
+      endDate, 
+      status 
+    });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition', 
+      `attachment; filename=invoices_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    
+    res.send(csvData);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error exporting invoices', 
+      error: error.message 
+    });
+  }
+});
+
 export default router; 

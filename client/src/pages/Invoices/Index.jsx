@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, DatePicker, Select, Space, Button, Modal, message } from 'antd';
-import { DollarOutlined, PlusOutlined } from '@ant-design/icons';
+import { DollarOutlined, PlusOutlined, DownloadOutlined } from '@ant-design/icons';
 import UniversalTable from '../../components/UniversalTable';
 import ActionDropdown from '../../components/ActionDropdown';
 import InvoiceModel from '../../components/InvoiceModel/InvoiceModel';
@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 const { RangePicker } = DatePicker;
 
 const Invoices = () => {
-  const [timeRange, setTimeRange] = useState('7days');
+  const [timeRange, setTimeRange] = useState('currMonth');
   const [dateRange, setDateRange] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -203,6 +203,49 @@ const Invoices = () => {
     setStatusFilter(value);
   };
 
+  const handleExportData = async () => {
+    try {
+      let queryParams = new URLSearchParams();
+      
+      queryParams.append('timeRange', timeRange || 'currMonth');
+      
+      if (searchQuery) {
+        queryParams.append('search', searchQuery);
+      }
+      if (dateRange && dateRange[0] && dateRange[1]) {
+        queryParams.append('startDate', dateRange[0].format('YYYY-MM-DD'));
+        queryParams.append('endDate', dateRange[1].format('YYYY-MM-DD'));
+      }
+      if (statusFilter) {
+        queryParams.append('status', statusFilter);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/invoices/export?${queryParams}`,
+        { method: 'GET' }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices_${timeRange || 'currMonth'}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      message.success('Data exported successfully');
+    } catch (error) {
+      message.error('Failed to export data: ' + error.message);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6">
@@ -240,6 +283,17 @@ const Invoices = () => {
             allowClear
             options={statusOptions}
           />
+          <Button 
+            icon={<DownloadOutlined />}
+            onClick={handleExportData}
+            style={{ 
+              backgroundColor: '#aa2478',
+              borderColor: '#aa2478',
+              color: 'white'
+            }}
+          >
+            Export
+          </Button>
         </Space>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">

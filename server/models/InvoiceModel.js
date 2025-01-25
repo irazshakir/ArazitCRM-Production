@@ -301,6 +301,51 @@ const InvoiceModel = {
     } catch (error) {
       throw error;
     }
+  },
+
+  exportData: async ({ search, timeRange, startDate, endDate, status }) => {
+    try {
+      const invoices = await InvoiceModel.findAll({ 
+        search, 
+        timeRange, 
+        startDate, 
+        endDate, 
+        status 
+      });
+      
+      // Convert data to CSV format
+      const headers = [
+        'Invoice Number',
+        'Created Date',
+        'Due Date',
+        'Bill To',
+        'Total Amount',
+        'Amount Received',
+        'Remaining Amount',
+        'Status',
+        'Notes',
+        'Created At',
+        'Updated At'
+      ].join(',');
+
+      const rows = invoices.map(invoice => [
+        invoice.invoice_number,
+        new Date(invoice.created_date).toISOString().split('T')[0],
+        new Date(invoice.due_date).toISOString().split('T')[0],
+        (invoice.bill_to || '').replace(/,/g, ';'),
+        invoice.total_amount,
+        invoice.amount_received,
+        invoice.remaining_amount,
+        invoice.status,
+        (invoice.notes || '').replace(/,/g, ';'),
+        new Date(invoice.created_at).toISOString(),
+        new Date(invoice.updated_at).toISOString()
+      ].join(','));
+
+      return [headers, ...rows].join('\n');
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

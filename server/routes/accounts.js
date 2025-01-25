@@ -72,4 +72,25 @@ router.delete('/accounts/:id', async (req, res) => {
   }
 });
 
+// Add this new route
+router.get('/accounts/export', async (req, res) => {
+  try {
+    const { timeRange } = req.query;
+    const csvData = await AccountModel.exportData({ timeRange });
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader(
+      'Content-Disposition', 
+      `attachment; filename=accounts_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`
+    );
+    
+    res.send(csvData);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error exporting transactions', 
+      error: error.message 
+    });
+  }
+});
+
 export default router; 
